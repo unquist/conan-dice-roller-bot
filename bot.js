@@ -33,7 +33,7 @@ function getHelpText1()
 	helpText += "\n`/roll 4d100-7 adv`    (Rolls four hundred-sided dice twice and takes the higher result, then substracts seven)";
 	helpText += "\n`/roll 1d4 dis`    (Rolls a single four-sided die twice and takes the lower result.)";
 	helpText += "\n`/roll 1d20+1 to hit with sword 2d8 slashing damage`    (Rolls a single d20, adds 1 to the result, and returns the outcome. Then roll two eight-side dice and return the result. The labels will be attached to each result.)";
-	helpText += "\n";		
+	helpText += "\n\n";		
 	return helpText;
 }
 
@@ -43,7 +43,7 @@ function getHelpText2()
 	helpText += "\nYou may add (in any order) a parameter of the form `#x` (or `x#`), which will run # multiples of whatever the command is:";
 	helpText += "\n`/roll 10x 1d20+1 to hit 1d6 damage`    (Rolls a 1d20+1 and a 1d6 couplet, 10 times in a row)";
 	helpText += "\n`/roll x2 1d20-1 to hit 1d12+1 damage`    (Rolls a 1d20-1 and a 1d12+1 couplet, twice in a row)";
-      	helpText += "\n";
+      	helpText += "\n\n";
 	return helpText;
 }
 
@@ -60,16 +60,95 @@ function getHelpText3()
 	helpText += "\nYou can set a dice macro with the `setmacro` command. Macro names must be prefixed with `$` at creation, and use alphanumeric characters (no spaces). Whatever follows the macro name will be the command set to that macro:";
 	helpText += "\n`/roll setmacro $fists-of-fury 2x 1d20+5 to hit with fists of fury to hit 1d6 damage`";
 	helpText += "\n`/roll fists-of-fury`";
+	helpText += "\n\n";
 	return helpText;
 }
+
+function processDiceCommandString(diceCommandString)
+{
+			var text = diceCommandString; //create a copy since we will be modifying this
+			var match = text.match(/(\d+)(d)(\d+)/ig);
+
+			if(!match) {
+				logger("failed match!");
+				return '*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.';
+			}
+
+			//first, check to see if there's a multiplier anywhere in the string
+			var multiplierMatch = text.match(/\s{0,1}(\d+)[x|X]\s/i);
+			var multiplier = 1;
+			if(multiplierMatch != null)
+			{
+				logger("Found a multipler match: " +multiplierMatch);
+				multiplier = Number(multiplierMatch[1]);
+				var indexOfMultipler = text.indexOf(multiplierMatch[1]);
+				logger("Found a multipler match; text before: " +text);
+				text = text.replace(/(\d+)[x|X]/,"");
+				logger("Found a multipler match; text after: " +text);
+			}
+			else
+			{
+
+        multiplierMatch = text.match(/\s{0,1}[x|X](\d+)\s/i);
+			  multiplier = 1;
+			  if(multiplierMatch != null)
+			  {
+				  logger("Found a multipler match: " +multiplierMatch);
+				  multiplier = Number(multiplierMatch[1]);
+				  var indexOfMultipler = text.indexOf(multiplierMatch[1]);
+				  logger("Found a multipler match; text before: " +text);
+				  text = text.replace(/(\d+)[x|X]/,"");
+				  logger("Found a multipler match; text after: " +text);
+			  }
+			  else
+			  {
+          logger("No multiplier request. Proceed as normal");
+        }
+
+			}
+
+			args = [];
+			var match = text.match(/(\d+)(d)(\d+)/ig);
+			for (var i = match.length-1 ; i >= 0; i--) {
+				var idx = text.lastIndexOf(match[i]);
+				arg = text.slice(idx);
+				args.push(arg);
+				text = text.slice(0,idx);
+				logger("arg: "+arg);
+				logger("remaining: "+text);
+			}
+
+			
+			var msgData = null;
+			for(var k = 0; k < multiplier; k++)
+			{
+				for (var i = args.length-1; i >= 0; i--) {
+					robot.logger.debug("Rolling: "+args[i]);
+					nextMessage = doRoll(realName,args[i]);
+					if(nextMessage) {
+						if(msgData == null) {
+							msgData = nextMessage;
+						} else {
+							msgData.attachments = msgData.attachments.concat(nextMessage.attachments);
+						}
+					} else {
+
+						return getMsgData('*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.');
+					}
+
+				}
+			}
+			msgData['channel'] = channel_name;
+			msgData['response_type'] = 'in_channel';
+			return msgData;
+		}
+
 
 
 //message reception code
 function rollMessage(message)
 {
-
-  //message.channel.send('message receieved');
-    
+  //message.channel.send('message receieved');   
   var data = message.content;
 	
   var helpMatch = data.match(/help/i);
@@ -80,7 +159,9 @@ function rollMessage(message)
 	message.author.send(getHelpText3());
 	return;
   }
-/*
+
+	//TODO: rolling for maddness in D&D 5e
+	/*
       var madnessMatch = data.text.match(/madness/i);
       if(madnessMatch != null)
       {
@@ -89,7 +170,10 @@ function rollMessage(message)
         robot.logger.debug("msgData is:\n" + JSON.stringify(msgData));
         return res.json(msgData);
       }
-
+      */
+	
+	//TODO macros
+	/*
 			var macroMatch = data.text.match(/(deleteallmymacros|deletemacro|clearallmacros|getmacro|setmacro|\$)/i);
 			//var macroMatch = data.text.match(new RegExp('clearallmacros\|getmacro\|setmacro\|'+MACRO_CHAR,"i"));
 			var diceMatch = data.text.match(/(\d+)(d)(\d+)/ig);
@@ -98,30 +182,35 @@ function rollMessage(message)
 				var msgData = processMacroCommand(data.text,realName,username,channel_name);
 				return res.json(msgData);
 			}
-			else if(diceMatch != null)
-			{
-				var msgData = processDiceCommandString(data.text,realName,channel_name);
-				robot.logger.debug("msgData is:\n" + JSON.stringify(msgData));
-        return res.json(msgData);
-			}
-			else
-			{
-				//no explicit macro command, and no dice roll command.
-				//check if it's a macro request without the #
-				macroMatch = data.text.match(/([\S]+)/i);
-				if(macroMatch == null)
-				{
-					return res.json(getMsgData("No valid dice roll or macro command. Use _/roll help_ to see command options."));
-				}
-				var msgData = processMacroCommand(data.text,realName,username,channel_name);
-				return res.json(msgData);
-			}
-      */
+	*/
+	
+			//else if(diceMatch != null)
+	var diceMatch = data.match(/(\d+)(d)(\d+)/ig);
+	if(diceMatch != null)
+	{
+		var msgData = processDiceCommandString(data);
+		logger("msgData is:\n" + msgData);
+        	message.channel.send(msgData);
+		return;
+	}
+	else
+	{
+		//TODO macros
+		/*
+		//no explicit macro command, and no dice roll command.
+		//check if it's a macro request without the #
+		macroMatch = data.text.match(/([\S]+)/i);
+		if(macroMatch == null)
+		{
+			message.channel.send("No valid dice roll or macro command. Use _/roll help_ to see command options.");
+			return;
+		}
+		var msgData = processMacroCommand(data.text,realName,username,channel_name);
+		return res.json(msgData);
+		*/
+		message.channel.send("No valid dice roll or macro command. Use _/roll help_ to see command options.");
+		return;
+	}
 }
-
-
-
-
-
 
 client.login(process.env.BOT_TOKEN);

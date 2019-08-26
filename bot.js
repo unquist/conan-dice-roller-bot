@@ -6,11 +6,14 @@ client.on('ready', () => {
 });
 
 client.on('message', message => {
-  if (message.content === '/roll') {
+  
+  if (message.content.startsWith('/roll')) {
     //message.reply('Critical fail');
     //message.channel.send('FAIL');
-    rollMessage(message);
+	logger("someone sent a /roll message");
+  	rollMessage(message);
   }
+  
 });
 
 function logger(message)
@@ -54,12 +57,12 @@ function getHelpText()
 //message reception code
 function rollMessage(message)
 {
-  logger("someone sent a /roll message");
+
   //message.channel.send('message receieved');
     
   var data = message.content;
 	
-  var helpMatch = data.text.match(/help/i);
+  var helpMatch = data.match(/help/i);
   if(helpMatch != null)
   {
 	message.author.send(getHelpText());

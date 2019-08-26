@@ -1,3 +1,3 @@
 {
-    "token": "NjE1NTQyMzY2MTMyMTA5MzE2.XWPjnQ.Y6K_4rcOMuDtR-BMEObbTJU5Zuk"
+    "token": "INSERT_TOKEN"
 }

@@ -12,5 +12,5 @@ client.on('message', msg => {
   }
 });
 
-
+console.log(`AUTH token:` + process.env.BOT_TOKEN);
 client.login(process.env.BOT_TOKEN);

@@ -64,18 +64,164 @@ function getHelpText3()
 	return helpText;
 }
 
-function processDiceCommandString(diceCommandString)
-{
-			var text = diceCommandString; //create a copy since we will be modifying this
-			var match = text.match(/(\d+)(d)(\d+)/ig);
+function randint(sides) {
+	return Math.round(Math.random() * (sides - 1)) + 1;
+}
 
-			if(!match) {
-				logger("failed match!");
-				return '*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.';
+function rolldice(sides, num) 
+{
+	var results = [];
+	for (var j = 1; j <= num; j++) {
+		results.push(randint(sides));
+	}
+	return results;
+}
+
+function getRollResults(sides, num) {
+	var result = {
+		rolls: rolldice(sides, num),
+		rollsTotal: 0
+	}
+	for( var i = 0; i < result.rolls.length ; i++) {
+		result.rollsTotal += result.rolls[i];
+	}
+	return result;
+}
+
+function diceBot(num,sides,bonusType,bonus,advantage,label) {
+			var results = [];
+			var isCrit = false;
+			var isFail = false;
+			var firstResults = getRollResults(sides,num);
+			results.push(firstResults);
+			var finalResults = firstResults;
+
+			if(advantage.indexOf("dis") != -1) {
+				var secondResults = getRollResults(sides,num);
+				results.push(secondResults);
+				if(firstResults.rollsTotal > secondResults.rollsTotal) {
+					finalResults = secondResults;
+				} else {
+					finalResults = firstResults;
+				}
+			} else if(advantage.indexOf("adv") != -1) {
+				var secondResults = getRollResults(sides,num);
+				results.push(secondResults);
+				if(firstResults.rollsTotal > secondResults.rollsTotal) {
+					finalResults = firstResults;
+				} else {
+					finalResults = secondResults;
+				}
 			}
 
-			//first, check to see if there's a multiplier anywhere in the string
-			var multiplierMatch = text.match(/\s{0,1}(\d+)[x|X]\s/i);
+			if(sides == 20 && num == 1) {
+				if(finalResults.rollsTotal == 20) {
+					isCrit = true;
+				} else if(finalResults.rollsTotal == 1) {
+					isFail = true;
+				}
+			}
+			// add bonus
+			var finalTotal = finalResults.rollsTotal;
+			var bonusString = "";
+			if(bonusType && (bonusType == "+" || bonusType == "-")) {
+				finalTotal = finalTotal + Number(bonusType+bonus);
+				bonusString = bonusType+bonus;
+			}
+
+			//printing results
+			var text = name + " rolled *`" + finalTotal + "`*";
+
+			if(advantage) {
+				if(advantage.indexOf("dis") != -1) {
+					text += " with disadvantage";
+				} else if (advantage.indexOf("adv") != -1) {
+					text += " with advantage";
+				}
+			}
+
+			if(label) {
+				text += " for _'"+label+"'_";
+			}
+
+			if(isCrit) {
+				text += " _`CRITICAL!`_";
+			} else if(isFail) {
+				text += " `FAIL!`";
+			}
+			text += "\n";
+
+			var formatResult = function(num, sides, bonusString, result) {
+				var m = "_" + num + "d" + sides + bonusString + "_ : ";
+				if(result.rolls.length > 1) {
+					m += "Results";
+					for(var i = 0; i < result.rolls.length; i++) {
+						m += " `"+result.rolls[i]+"`"
+					}
+					m += " " + bonusString;
+				} else {
+					m += "Result _" + result.rollsTotal + bonusString+"_"
+				}
+				m += "  Total: _*" + (result.rollsTotal+Number(bonusString)) + "*_\n"
+
+				return m;
+			};
+
+			for(var i = 0; i < results.length; i++) {
+				text += formatResult(num,sides,bonusString,results[i]);
+			}
+
+			//build slack message
+			var msgData = {
+				attachments: [
+				{
+					"fallback": text,
+					"color": "#cc3300",
+					"text": text,
+					"mrkdwn_in": ["text"]
+				}
+				]
+			};
+
+			if(isCrit) {
+				msgData.attachments.push({"image_url": "http://www.neverdrains.com/criticalhit/images/critical-hit.jpg", "text": "*CRITICAL!*","mrkdwn_in": ["text"]});
+			}
+			if(isFail) {
+				msgData.attachments.push({"image_url": "http://i.imgur.com/eVW7XtF.jpg", "text": "*FAIL!*","mrkdwn_in": ["text"]});
+			}
+
+			return msgData;
+};
+
+function doRoll(text) 
+{
+	var match = text.match(/(\d+)(d)(\d+)(\+|-){0,1}(\d+){0,1}\s{0,1}(disadvantage|advantage|adv\b|dis\b){0,1}\s{0,1}([\s\S]+)?/i);
+	if(match != null)
+	{
+		var num = match[1] || 1;
+		var sides = match[3] || 6;
+		var bonusType = match[4] || "";
+		var bonus = match[5] || 0;
+		var advantage = match[6] || "";
+		var label = match[7] || "";
+		var msgData = diceBot(num,sides,bonusType,bonus,advantage,label);
+		return msgData;
+	}
+	return null;
+}
+
+function processDiceCommandString(diceCommandString)
+{
+	var text = diceCommandString; //create a copy since we will be modifying this
+	var match = text.match(/(\d+)(d)(\d+)/ig);
+
+	if(!match) {
+		logger("failed match!");
+		return '*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.';
+	}
+
+	//first, check to see if there's a multiplier anywhere in the string
+	var multiplierMatch = text.match(/\s{0,1}(\d+)[x|X]\s/i);
 			var multiplier = 1;
 			if(multiplierMatch != null)
 			{
@@ -123,7 +269,7 @@ function processDiceCommandString(diceCommandString)
 			for(var k = 0; k < multiplier; k++)
 			{
 				for (var i = args.length-1; i >= 0; i--) {
-					robot.logger.debug("Rolling: "+args[i]);
+					logger("Rolling: "+args[i]);
 					nextMessage = doRoll(realName,args[i]);
 					if(nextMessage) {
 						if(msgData == null) {

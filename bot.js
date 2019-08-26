@@ -6,9 +6,10 @@ client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('message', msg => {
-  if (msg.content === '/roll') {
-    msg.reply('Critical fail');
+client.on('message', message => {
+  if (message.content === '/roll') {
+    //message.reply('Critical fail');
+    message.channel.send('FAIL');
   }
 });
 

@@ -193,7 +193,7 @@ function diceBot(name,num,sides,bonusType,bonus,advantage,label) {
 	return msgData;
 }
 
-function doRoll(text) 
+function doRoll(realName,text) 
 {
 	logger("doRoll: text is ["+text+"]");
 	var match = text.match(/(\d+)(d)(\d+)(\+|-){0,1}(\d+){0,1}\s{0,1}(disadvantage|advantage|adv\b|dis\b){0,1}\s{0,1}([\s\S]+)?/i);
@@ -207,7 +207,7 @@ function doRoll(text)
 		var bonus = match[5] || 0;
 		var advantage = match[6] || "";
 		var label = match[7] || "";
-		var msgData = diceBot(name,num,sides,bonusType,bonus,advantage,label);
+		var msgData = diceBot(realName,num,sides,bonusType,bonus,advantage,label);
 		return msgData;
 	}
 	logger("doRoll: match was null");

@@ -345,7 +345,9 @@ function rollMessage(message)
 		var msgDataArray = processDiceCommandString(name,data);
 		//logger("msgData is:\n" + msgData);
 		//TODO: the data needs to arrive in a foemat neutral package. we should send it tona different function for formatting
-        	message.channel.send(msgDataArray[0].results);
+		for(var i = 0; i < msgDataArray.length; i++)
+		{     	message.channel.send(msgDataArray[i].results);
+		}
 		return;
 	}
 	else

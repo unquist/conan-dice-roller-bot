@@ -215,7 +215,7 @@ function processDiceCommandString(realName, diceCommandString)
 
 	if(!match) {
 		logger("failed match!");
-		return '*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.';
+		return '*1No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.';
 	}
 
 	//first, check to see if there's a multiplier anywhere in the string
@@ -277,7 +277,7 @@ function processDiceCommandString(realName, diceCommandString)
 			else 
 			{
 				var errorMsgData = {
-					"results": '*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.',
+					"results": '*2No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.',
 	  				"critical" : false,
 					"fail": false
 				};
@@ -357,7 +357,7 @@ function rollMessage(message)
 		var msgData = processMacroCommand(data.text,realName,username,channel_name);
 		return res.json(msgData);
 		*/
-		message.channel.send("No valid dice roll or macro command. Use _/roll help_ to see command options.");
+		message.channel.send("3No valid dice roll or macro command. Use _/roll help_ to see command options.");
 		return;
 	}
 }

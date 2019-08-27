@@ -12,6 +12,7 @@ client.on('message', message => {
     //message.channel.send('FAIL');
 	logger("someone sent a /roll message");
   	rollMessage(message);
+	logger("finished processing a /roll message");
   }
   
 });

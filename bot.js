@@ -220,81 +220,75 @@ function processDiceCommandString(realName, diceCommandString)
 
 	//first, check to see if there's a multiplier anywhere in the string
 	var multiplierMatch = text.match(/\s{0,1}(\d+)[x|X]\s/i);
-			var multiplier = 1;
-			if(multiplierMatch != null)
-			{
-				logger("Found a multipler match: " +multiplierMatch);
-				multiplier = Number(multiplierMatch[1]);
-				var indexOfMultipler = text.indexOf(multiplierMatch[1]);
-				logger("Found a multipler match; text before: " +text);
-				text = text.replace(/(\d+)[x|X]/,"");
-				logger("Found a multipler match; text after: " +text);
-			}
-			else
-			{
+	var multiplier = 1;
+	if(multiplierMatch != null)
+	{
+		logger("Found a multipler match: " +multiplierMatch);
+		multiplier = Number(multiplierMatch[1]);
+		var indexOfMultipler = text.indexOf(multiplierMatch[1]);
+		logger("Found a multipler match; text before: " +text);
+		text = text.replace(/(\d+)[x|X]/,"");
+		logger("Found a multipler match; text after: " +text);
+	}
+	else
+	{
 
-        multiplierMatch = text.match(/\s{0,1}[x|X](\d+)\s/i);
-			  multiplier = 1;
-			  if(multiplierMatch != null)
-			  {
-				  logger("Found a multipler match: " +multiplierMatch);
-				  multiplier = Number(multiplierMatch[1]);
-				  var indexOfMultipler = text.indexOf(multiplierMatch[1]);
-				  logger("Found a multipler match; text before: " +text);
-				  text = text.replace(/(\d+)[x|X]/,"");
-				  logger("Found a multipler match; text after: " +text);
-			  }
-			  else
-			  {
-          logger("No multiplier request. Proceed as normal");
-        }
+        	multiplierMatch = text.match(/\s{0,1}[x|X](\d+)\s/i);
+		multiplier = 1;
+		if(multiplierMatch != null)
+		{
+			logger("Found a multipler match: " +multiplierMatch);
+			multiplier = Number(multiplierMatch[1]);
+			var indexOfMultipler = text.indexOf(multiplierMatch[1]);
+			logger("Found a multipler match; text before: " +text);
+			text = text.replace(/(\d+)[x|X]/,"");
+			logger("Found a multipler match; text after: " +text);
+		}
+		else
+		{
+          		logger("No multiplier request. Proceed as normal");
+        	}
+	}
 
-			}
-
-			args = [];
-			var match = text.match(/(\d+)(d)(\d+)/ig);
-			for (var i = match.length-1 ; i >= 0; i--) {
-				var idx = text.lastIndexOf(match[i]);
-				arg = text.slice(idx);
-				args.push(arg);
-				text = text.slice(0,idx);
-				logger("arg: "+arg);
-				logger("remaining: "+text);
-			}
+	args = [];
+	var match = text.match(/(\d+)(d)(\d+)/ig);
+	for (var i = match.length-1 ; i >= 0; i--) 
+	{
+		var idx = text.lastIndexOf(match[i]);
+		arg = text.slice(idx);
+		args.push(arg);
+		text = text.slice(0,idx);
+		logger("arg: "+arg);
+		logger("remaining: "+text);
+	}
 
 			
-			var msgDataArray = [];
-			for(var k = 0; k < multiplier; k++)
+	var msgDataArray = [];
+	for(var k = 0; k < multiplier; k++)
+	{
+		for (var i = args.length-1; i >= 0; i--) 
+		{
+			logger("Rolling: "+args[i]);
+			nextMessage = doRoll(realName,args[i]);
+			if(nextMessage) 
 			{
-				for (var i = args.length-1; i >= 0; i--) {
-					logger("Rolling: "+args[i]);
-					nextMessage = doRoll(realName,args[i]);
-					if(nextMessage) 
-					{
-					   /*
-						  if(msgData == null) 
-						  {
-		  					msgData = nextMessage;
-				  		} 
-				  		else 
-				  		{
-							  	 msgData.attachments = msgData.attachments.concat(nextMessage.attachments);
-					  	}
-					  	*/
-					  	msgDataArray.push(nextMessage);
-				} 
-				else 
-				{
-
-						return getMsgData('*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.');
-					}
-
-				}
+			  	msgDataArray.push(nextMessage);
+			} 
+			else 
+			{
+				var errorMsgData = {
+					"results": '*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.',
+	  				"critical" : false,
+					"fail": false
+				};
+				msgDataArray.push(errorMsgData);
+				return msgDataArray;
 			}
-		//	msgData['channel'] = channel_name;
-			//msgData['response_type'] = 'in_channel';
-			return msgDataArray; 
 		}
+	}
+
+	return msgDataArray; 
+}
 
 
 

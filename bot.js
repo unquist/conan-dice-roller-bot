@@ -173,6 +173,7 @@ function diceBot(name,num,sides,bonusType,bonus,advantage,label) {
 		text += formatResult(num,sides,bonusString,results[i]);
 	}
 	//build result data structure
+	logger("final result text in diceBot is ["+text+"]");
 	var msgData = {
 		"results": text,
 	  	"critical" : false,
@@ -196,6 +197,7 @@ function doRoll(text)
 	var match = text.match(/(\d+)(d)(\d+)(\+|-){0,1}(\d+){0,1}\s{0,1}(disadvantage|advantage|adv\b|dis\b){0,1}\s{0,1}([\s\S]+)?/i);
 	if(match != null)
 	{
+		logger("doRoll: match was not null");
 		var num = match[1] || 1;
 		var sides = match[3] || 6;
 		var bonusType = match[4] || "";
@@ -205,6 +207,7 @@ function doRoll(text)
 		var msgData = diceBot(name,num,sides,bonusType,bonus,advantage,label);
 		return msgData;
 	}
+	logger("doRoll: match was null");
 	return null;
 }
 
@@ -215,7 +218,7 @@ function processDiceCommandString(realName, diceCommandString)
 
 	if(!match) {
 		logger("failed match!");
-		return '*1No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.';
+		return '*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.';
 	}
 
 	//first, check to see if there's a multiplier anywhere in the string
@@ -270,14 +273,14 @@ function processDiceCommandString(realName, diceCommandString)
 		{
 			logger("Rolling: "+args[i]);
 			nextMessage = doRoll(realName,args[i]);
-			if(nextMessage) 
+			if(nextMessage != null) 
 			{
 			  	msgDataArray.push(nextMessage);
 			} 
 			else 
 			{
 				var errorMsgData = {
-					"results": '*2No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.',
+					"results": '*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.',
 	  				"critical" : false,
 					"fail": false
 				};

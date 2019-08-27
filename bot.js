@@ -195,7 +195,9 @@ function diceBot(name,num,sides,bonusType,bonus,advantage,label) {
 
 function doRoll(text) 
 {
+	logger("doRoll: text is ["+text+"]");
 	var match = text.match(/(\d+)(d)(\d+)(\+|-){0,1}(\d+){0,1}\s{0,1}(disadvantage|advantage|adv\b|dis\b){0,1}\s{0,1}([\s\S]+)?/i);
+	logger("doRoll: match is ["+match+"]");
 	if(match != null)
 	{
 		logger("doRoll: match was not null");

@@ -89,106 +89,107 @@ function getRollResults(sides, num) {
 }
 
 function diceBot(name,num,sides,bonusType,bonus,advantage,label) {
-			var results = [];
-			var isCrit = false;
-			var isFail = false;
-			var firstResults = getRollResults(sides,num);
-			results.push(firstResults);
-			var finalResults = firstResults;
+	var results = [];
+	var isCrit = false;
+	var isFail = false;
+	var firstResults = getRollResults(sides,num);
+	results.push(firstResults);
+	var finalResults = firstResults;
 
-			if(advantage.indexOf("dis") != -1) {
-				var secondResults = getRollResults(sides,num);
-				results.push(secondResults);
-				if(firstResults.rollsTotal > secondResults.rollsTotal) {
-					finalResults = secondResults;
-				} else {
-					finalResults = firstResults;
-				}
-			} else if(advantage.indexOf("adv") != -1) {
-				var secondResults = getRollResults(sides,num);
-				results.push(secondResults);
-				if(firstResults.rollsTotal > secondResults.rollsTotal) {
-					finalResults = firstResults;
-				} else {
-					finalResults = secondResults;
-				}
+	if(advantage.indexOf("dis") != -1) 
+	{
+		var secondResults = getRollResults(sides,num);
+		results.push(secondResults);
+		if(firstResults.rollsTotal > secondResults.rollsTotal) {
+			finalResults = secondResults;
+		} else {
+			finalResults = firstResults;
+		}
+	} 
+	else if(advantage.indexOf("adv") != -1) 
+	{
+		var secondResults = getRollResults(sides,num);
+		results.push(secondResults);
+		if(firstResults.rollsTotal > secondResults.rollsTotal) {
+			finalResults = firstResults;
+		} else {
+			finalResults = secondResults;
+		}
+	}
+
+	if(sides == 20 && num == 1) {
+		if(finalResults.rollsTotal == 20) {
+			isCrit = true;
+		} else if(finalResults.rollsTotal == 1) {
+			isFail = true;
+		}
+	}
+	// add bonus
+	var finalTotal = finalResults.rollsTotal;
+	var bonusString = "";
+	if(bonusType && (bonusType == "+" || bonusType == "-")) {
+		finalTotal = finalTotal + Number(bonusType+bonus);
+		bonusString = bonusType+bonus;
+	}
+	//printing results
+	var text = name + " rolled *`" + finalTotal + "`*";
+
+	if(advantage) {
+		if(advantage.indexOf("dis") != -1) {
+			text += " with disadvantage";
+		} else if (advantage.indexOf("adv") != -1) {
+			text += " with advantage";
+		}
+	}
+
+	if(label) {
+		text += " for _'"+label+"'_";
+	}
+
+	if(isCrit) {
+		text += " _`CRITICAL!`_";
+	} else if(isFail) {
+		text += " `FAIL!`";
+	}
+	text += "\n";
+
+	var formatResult = function(num, sides, bonusString, result) {
+		var m = "_" + num + "d" + sides + bonusString + "_ : ";
+		if(result.rolls.length > 1) {
+			m += "Results";
+			for(var i = 0; i < result.rolls.length; i++) {
+				m += " `"+result.rolls[i]+"`"
 			}
+			m += " " + bonusString;
+		} else {
+			m += "Result _" + result.rollsTotal + bonusString+"_"
+		}
+		m += "  Total: _*" + (result.rollsTotal+Number(bonusString)) + "*_\n"
 
-			if(sides == 20 && num == 1) {
-				if(finalResults.rollsTotal == 20) {
-					isCrit = true;
-				} else if(finalResults.rollsTotal == 1) {
-					isFail = true;
-				}
-			}
-			// add bonus
-			var finalTotal = finalResults.rollsTotal;
-			var bonusString = "";
-			if(bonusType && (bonusType == "+" || bonusType == "-")) {
-				finalTotal = finalTotal + Number(bonusType+bonus);
-				bonusString = bonusType+bonus;
-			}
+		return m;
+	};
 
-			//printing results
-			var text = name + " rolled *`" + finalTotal + "`*";
+	for(var i = 0; i < results.length; i++) {
+		text += formatResult(num,sides,bonusString,results[i]);
+	}
+	//build result data structure
+	var msgData = {
+		"results": text,
+	  	"critical" : false,
+		"fail": false
+	};
 
-			if(advantage) {
-				if(advantage.indexOf("dis") != -1) {
-					text += " with disadvantage";
-				} else if (advantage.indexOf("adv") != -1) {
-					text += " with advantage";
-				}
-			}
+	if(isCrit) {
+		//msgData.attachments.push({"image_url": "http://www.neverdrains.com/criticalhit/images/critical-hit.jpg", "text": "*CRITICAL!*","mrkdwn_in": ["text"]});
+		msgData.critical = true;
+	}
+	if(isFail) {
+		//msgData.attachments.push({"image_url": "http://i.imgur.com/eVW7XtF.jpg", "text": "*FAIL!*","mrkdwn_in": ["text"]});
+		msgData.fail = true;
+	}
 
-			if(label) {
-				text += " for _'"+label+"'_";
-			}
-
-			if(isCrit) {
-				text += " _`CRITICAL!`_";
-			} else if(isFail) {
-				text += " `FAIL!`";
-			}
-			text += "\n";
-
-			var formatResult = function(num, sides, bonusString, result) {
-				var m = "_" + num + "d" + sides + bonusString + "_ : ";
-				if(result.rolls.length > 1) {
-					m += "Results";
-					for(var i = 0; i < result.rolls.length; i++) {
-						m += " `"+result.rolls[i]+"`"
-					}
-					m += " " + bonusString;
-				} else {
-					m += "Result _" + result.rollsTotal + bonusString+"_"
-				}
-				m += "  Total: _*" + (result.rollsTotal+Number(bonusString)) + "*_\n"
-
-				return m;
-			};
-
-			for(var i = 0; i < results.length; i++) {
-				text += formatResult(num,sides,bonusString,results[i]);
-			}
-
-			//build result data structure
-			var msgData = {
-					"results": text,
-			  "critical" : false,
-			  "fail": false
-			};
-
-			if(isCrit) {
-				//msgData.attachments.push({"image_url": "http://www.neverdrains.com/criticalhit/images/critical-hit.jpg", "text": "*CRITICAL!*","mrkdwn_in": ["text"]});
-				msgData.critical = true;
-			}
-			if(isFail) {
-				//msgData.attachments.push({"image_url": "http://i.imgur.com/eVW7XtF.jpg", "text": "*FAIL!*","mrkdwn_in": ["text"]});
-				msgData.fail = true;
-			}
-
-			return msgData;
-};
+	return msgData;
+}
 
 function doRoll(text) 
 {

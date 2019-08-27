@@ -341,10 +341,11 @@ function rollMessage(message)
 	var diceMatch = data.match(/(\d+)(d)(\d+)/ig);
 	if(diceMatch != null)
 	{
+		logger("rolling dice...");
 		var msgDataArray = processDiceCommandString(name,data);
 		//logger("msgData is:\n" + msgData);
 		//TODO: the data needs to arrive in a foemat neutral package. we should send it tona different function for formatting
-        	message.channel.send(msgData);
+        	message.channel.send(msgDataArray[0].results);
 		return;
 	}
 	else

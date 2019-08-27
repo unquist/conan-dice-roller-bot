@@ -347,6 +347,9 @@ function rollMessage(message)
 		//TODO: the data needs to arrive in a foemat neutral package. we should send it tona different function for formatting
 		for(var i = 0; i < msgDataArray.length; i++)
 		{     	message.channel.send(msgDataArray[i].results);
+		
+		const embed = new RichEmbed().setTitle('A slick little embed').setColor(0xFF0000).setDescription('Hello, this is a slick embed!');
+		message.channel.send(embed);
 		}
 		return;
 	}

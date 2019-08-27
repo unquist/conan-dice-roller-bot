@@ -262,7 +262,7 @@ function processDiceCommandString(realName, diceCommandString)
 		logger("remaining: "+text);
 	}
 
-			
+	logger("Building msgDataArray");		
 	var msgDataArray = [];
 	for(var k = 0; k < multiplier; k++)
 	{

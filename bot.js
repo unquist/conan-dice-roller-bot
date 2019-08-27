@@ -88,7 +88,7 @@ function getRollResults(sides, num) {
 	return result;
 }
 
-function diceBot(num,sides,bonusType,bonus,advantage,label) {
+function diceBot(name,num,sides,bonusType,bonus,advantage,label) {
 			var results = [];
 			var isCrit = false;
 			var isFail = false;
@@ -171,23 +171,20 @@ function diceBot(num,sides,bonusType,bonus,advantage,label) {
 				text += formatResult(num,sides,bonusString,results[i]);
 			}
 
-			//build slack message
+			//build result data structure
 			var msgData = {
-				attachments: [
-				{
-					"fallback": text,
-					"color": "#cc3300",
-					"text": text,
-					"mrkdwn_in": ["text"]
-				}
-				]
+					"results": text,
+			  "critical" : false,
+			  "fail": false
 			};
 
 			if(isCrit) {
-				msgData.attachments.push({"image_url": "http://www.neverdrains.com/criticalhit/images/critical-hit.jpg", "text": "*CRITICAL!*","mrkdwn_in": ["text"]});
+				//msgData.attachments.push({"image_url": "http://www.neverdrains.com/criticalhit/images/critical-hit.jpg", "text": "*CRITICAL!*","mrkdwn_in": ["text"]});
+				msgData.critical = true;
 			}
 			if(isFail) {
-				msgData.attachments.push({"image_url": "http://i.imgur.com/eVW7XtF.jpg", "text": "*FAIL!*","mrkdwn_in": ["text"]});
+				//msgData.attachments.push({"image_url": "http://i.imgur.com/eVW7XtF.jpg", "text": "*FAIL!*","mrkdwn_in": ["text"]});
+				msgData.fail = true;
 			}
 
 			return msgData;
@@ -204,13 +201,13 @@ function doRoll(text)
 		var bonus = match[5] || 0;
 		var advantage = match[6] || "";
 		var label = match[7] || "";
-		var msgData = diceBot(num,sides,bonusType,bonus,advantage,label);
+		var msgData = diceBot(name,num,sides,bonusType,bonus,advantage,label);
 		return msgData;
 	}
 	return null;
 }
 
-function processDiceCommandString(diceCommandString)
+function processDiceCommandString(realName, diceCommandString)
 {
 	var text = diceCommandString; //create a copy since we will be modifying this
 	var match = text.match(/(\d+)(d)(\d+)/ig);
@@ -265,28 +262,37 @@ function processDiceCommandString(diceCommandString)
 			}
 
 			
-			var msgData = null;
+			var msgDataArray = [];
 			for(var k = 0; k < multiplier; k++)
 			{
 				for (var i = args.length-1; i >= 0; i--) {
 					logger("Rolling: "+args[i]);
 					nextMessage = doRoll(realName,args[i]);
-					if(nextMessage) {
-						if(msgData == null) {
-							msgData = nextMessage;
-						} else {
-							msgData.attachments = msgData.attachments.concat(nextMessage.attachments);
-						}
-					} else {
+					if(nextMessage) 
+					{
+					   /*
+						  if(msgData == null) 
+						  {
+		  					msgData = nextMessage;
+				  		} 
+				  		else 
+				  		{
+							  	 msgData.attachments = msgData.attachments.concat(nextMessage.attachments);
+					  	}
+					  	*/
+					  	msgDataArray.push(nextMessage);
+				} 
+				else 
+				{
 
 						return getMsgData('*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.');
 					}
 
 				}
 			}
-			msgData['channel'] = channel_name;
-			msgData['response_type'] = 'in_channel';
-			return msgData;
+		//	msgData['channel'] = channel_name;
+			//msgData['response_type'] = 'in_channel';
+			return msgDataArray; 
 		}
 
 
@@ -296,7 +302,7 @@ function rollMessage(message)
 {
   //message.channel.send('message receieved');   
   var data = message.content;
-	
+	 var name = message.author.username;
   var helpMatch = data.match(/help/i);
   if(helpMatch != null)
   {
@@ -334,8 +340,9 @@ function rollMessage(message)
 	var diceMatch = data.match(/(\d+)(d)(\d+)/ig);
 	if(diceMatch != null)
 	{
-		var msgData = processDiceCommandString(data);
-		logger("msgData is:\n" + msgData);
+		var msgDataArray = processDiceCommandString(name,data);
+		//logger("msgData is:\n" + msgData);
+		//TODO: the data needs to arrive in a foemat neutral package. we should send it tona different function for formatting
         	message.channel.send(msgData);
 		return;
 	}

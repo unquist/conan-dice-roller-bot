@@ -1,6 +1,8 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
 
+const DEBUG_MODE = false;
+
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
@@ -66,6 +68,10 @@ function getHelpText3()
 }
 
 function randint(sides) {
+	if(DEBUG_MODE && sides == 20)
+	{
+		return 1;
+	}
 	return Math.round(Math.random() * (sides - 1)) + 1;
 }
 
@@ -127,90 +133,70 @@ function diceBot(name,num,sides,bonusType,bonus,advantage,label) {
 	}
 	// add bonus
 	var finalTotal = finalResults.rollsTotal;
-	var bonusString = "";
+	var bonusString = "N/A";
 	if(bonusType && (bonusType == "+" || bonusType == "-")) {
 		finalTotal = finalTotal + Number(bonusType+bonus);
 		bonusString = bonusType+bonus;
 	}
-	//printing results
-	var text = name + " rolled *`" + finalTotal + "`*";
-
-	if(advantage) {
-		if(advantage.indexOf("dis") != -1) {
-			text += " with disadvantage";
-		} else if (advantage.indexOf("adv") != -1) {
-			text += " with advantage";
+	
+	//build result data structure
+	
+	var msgData = {
+		"name" : name,
+		"finalTotal" : finalTotal,
+		"advantage" : false,
+		"disadvantage" : false,
+		"label" : null,
+		"num" : num,
+		"sides" : sides,
+		"bonusString" : bonusString,
+		"results" : results,
+	  	"critical" : false,
+		"fail": false
+	};
+	
+	if(advantage) 
+	{
+		if(advantage.indexOf("dis") != -1) 
+		{
+			msgData.disadvantage = true;
+		} 
+		else if (advantage.indexOf("adv") != -1) 
+		{
+			msgData.advantage = true;
 		}
 	}
 
 	if(label) {
-		text += " for _'"+label+"'_";
+		msgData.label = label;
 	}
 
 	if(isCrit) {
-		text += " _`CRITICAL!`_";
-	} else if(isFail) {
-		text += " `FAIL!`";
-	}
-	text += "\n";
-
-	var formatResult = function(num, sides, bonusString, result) {
-		var m = "_" + num + "d" + sides + bonusString + "_ : ";
-		if(result.rolls.length > 1) {
-			m += "Results";
-			for(var i = 0; i < result.rolls.length; i++) {
-				m += " `"+result.rolls[i]+"`"
-			}
-			m += " " + bonusString;
-		} else {
-			m += "Result _" + result.rollsTotal + bonusString+"_"
-		}
-		m += "  Total: _*" + (result.rollsTotal+Number(bonusString)) + "*_\n"
-
-		return m;
-	};
-
-	for(var i = 0; i < results.length; i++) {
-		text += formatResult(num,sides,bonusString,results[i]);
-	}
-	//build result data structure
-	logger("final result text in diceBot is ["+text+"]");
-	var msgData = {
-		"results": text,
-	  	"critical" : false,
-		"fail": false
-	};
-
-	if(isCrit) {
-		//msgData.attachments.push({"image_url": "http://www.neverdrains.com/criticalhit/images/critical-hit.jpg", "text": "*CRITICAL!*","mrkdwn_in": ["text"]});
 		msgData.critical = true;
-	}
-	if(isFail) {
-		//msgData.attachments.push({"image_url": "http://i.imgur.com/eVW7XtF.jpg", "text": "*FAIL!*","mrkdwn_in": ["text"]});
+	} else if(isFail) {
 		msgData.fail = true;
 	}
-
+	
 	return msgData;
 }
 
 function doRoll(realName,text) 
 {
-	logger("doRoll: text is ["+text+"]");
+	//logger("doRoll: text is ["+text+"]");
 	var match = text.match(/(\d+)(d)(\d+)(\+|-){0,1}(\d+){0,1}\s{0,1}(disadvantage|advantage|adv\b|dis\b){0,1}\s{0,1}([\s\S]+)?/i);
-	logger("doRoll: match is ["+match+"]");
+	//logger("doRoll: match is ["+match+"]");
 	if(match != null)
 	{
-		logger("doRoll: match was not null");
+		//logger("doRoll: match was not null");
 		var num = match[1] || 1;
 		var sides = match[3] || 6;
 		var bonusType = match[4] || "";
 		var bonus = match[5] || 0;
 		var advantage = match[6] || "";
 		var label = match[7] || "";
-		var msgData = diceBot(realName,num,sides,bonusType,bonus,advantage,label);
-		return msgData;
+		return diceBot(realName,num,sides,bonusType,bonus,advantage,label);
 	}
-	logger("doRoll: match was null");
+	//logger("doRoll: match was null");
 	return null;
 }
 
@@ -220,7 +206,7 @@ function processDiceCommandString(realName, diceCommandString)
 	var match = text.match(/(\d+)(d)(\d+)/ig);
 
 	if(!match) {
-		logger("failed match!");
+		//logger("failed match!");
 		return '*No valid dice roll recognized in ['+diceCommandString+']!*\nUse _/roll help_ to get usage.';
 	}
 
@@ -229,31 +215,31 @@ function processDiceCommandString(realName, diceCommandString)
 	var multiplier = 1;
 	if(multiplierMatch != null)
 	{
-		logger("Found a multipler match: " +multiplierMatch);
+		//logger("Found a multipler match: " +multiplierMatch);
 		multiplier = Number(multiplierMatch[1]);
 		var indexOfMultipler = text.indexOf(multiplierMatch[1]);
-		logger("Found a multipler match; text before: " +text);
+		//logger("Found a multipler match; text before: " +text);
 		text = text.replace(/(\d+)[x|X]/,"");
-		logger("Found a multipler match; text after: " +text);
+		//logger("Found a multipler match; text after: " +text);
 	}
 	else
 	{
 
-        	multiplierMatch = text.match(/\s{0,1}[x|X](\d+)\s/i);
+        multiplierMatch = text.match(/\s{0,1}[x|X](\d+)\s/i);
 		multiplier = 1;
 		if(multiplierMatch != null)
 		{
-			logger("Found a multipler match: " +multiplierMatch);
+			//logger("Found a multipler match: " +multiplierMatch);
 			multiplier = Number(multiplierMatch[1]);
 			var indexOfMultipler = text.indexOf(multiplierMatch[1]);
-			logger("Found a multipler match; text before: " +text);
+			//logger("Found a multipler match; text before: " +text);
 			text = text.replace(/(\d+)[x|X]/,"");
-			logger("Found a multipler match; text after: " +text);
+			//logger("Found a multipler match; text after: " +text);
 		}
 		else
 		{
-          		logger("No multiplier request. Proceed as normal");
-        	}
+          	//logger("No multiplier request. Proceed as normal");
+        }
 	}
 
 	args = [];
@@ -264,21 +250,21 @@ function processDiceCommandString(realName, diceCommandString)
 		arg = text.slice(idx);
 		args.push(arg);
 		text = text.slice(0,idx);
-		logger("arg: "+arg);
-		logger("remaining: "+text);
+		//logger("arg: "+arg);
+		//logger("remaining: "+text);
 	}
 
-	logger("Building msgDataArray");		
-	var msgDataArray = [];
+	//logger("Building resultsArray");		
+	var resultsArray = [];
 	for(var k = 0; k < multiplier; k++)
 	{
 		for (var i = args.length-1; i >= 0; i--) 
 		{
-			logger("Rolling: "+args[i]);
-			nextMessage = doRoll(realName,args[i]);
-			if(nextMessage != null) 
+			//logger("Rolling: "+args[i]);
+			var nextRollResult = doRoll(realName,args[i]);
+			if(nextRollResult != null) 
 			{
-			  	msgDataArray.push(nextMessage);
+			  	resultsArray.push(nextRollResult);
 			} 
 			else 
 			{
@@ -287,40 +273,148 @@ function processDiceCommandString(realName, diceCommandString)
 	  				"critical" : false,
 					"fail": false
 				};
-				msgDataArray.push(errorMsgData);
-				return msgDataArray;
+				resultsArray.push(errorMsgData);
+				return resultsArray;
 			}
 		}
 	}
 
-	return msgDataArray; 
+	return resultsArray; 
 }
 
+function formatResultForDiscord(result)
+{
 
+	var titleText = result.name + " rolled *`" + result.finalTotal + "`*";
+
+	if(result.disadvantage) {
+		titleText += " with disadvantage";
+	} else if (result.advantage) {
+		titleText += " with advantage";
+	}
+	
+
+	if(result.label) {
+		titleText += " for _'"+result.label+"'_";
+	}
+
+	if(result.critical) {
+		titleText += " _`CRITICAL!`_";
+	} else if(result.fail) {
+		titleText += " `FAIL!`";
+	}
+	
+	var description = "";
+
+	var formatResult = function(num, sides, bonusString, singleRollResult) {
+		
+		var spacerCharacter = " . . . ";
+		
+		var m = "_" + num + "d" + sides;
+
+		if(bonusString != "N/A")
+		{
+			m += bonusString + "_ " + spacerCharacter;
+		}
+		else
+		{
+			m += "_ " + spacerCharacter;
+		}
+		
+
+		if(singleRollResult.rolls.length > 1) 
+		{
+			m += "**Results**";
+			for(var i = 0; i < singleRollResult.rolls.length; i++) {
+				m += " ` "+singleRollResult.rolls[i]+" ` "
+			}
+			if(bonusString != "N/A")
+			{
+				m += " "+spacerCharacter+" **Modifier**: _" + bonusString + "_ " + spacerCharacter;
+			}
+			else
+			{
+				m += " " + spacerCharacter;
+			}
+		} 
+		else 
+		{
+			m += "**Result** _" + singleRollResult.rollsTotal + "_";
+			if(bonusString != "N/A")
+			{
+				m += " "+spacerCharacter+" **Modifier**: _" + bonusString+"_ "+spacerCharacter;
+			}
+			else
+			{
+				m += " "+spacerCharacter;
+			}
+		}
+		
+		var total = singleRollResult.rollsTotal;
+		if(bonusString != "N/A")
+		{
+			total += Number(bonusString);
+		}
+		
+		m += "  **Total**: _*" + total + "*_ \n"
+
+		return m;
+	};
+
+	for(var i = 0; i < result.results.length; i++) {
+		description += formatResult(result.num,result.sides,result.bonusString,result.results[i]);
+	}
+
+	
+
+	const finalEmbed = {
+		"description": description,
+		"color": 8311585
+	}
+
+	
+	if(result.critical) {
+	
+		finalEmbed.image = {url:"http://www.neverdrains.com/criticalhit/images/critical-hit.jpg"};
+	}
+	if(result.fail) {
+		finalEmbed.image = {url:"http://i.imgur.com/eVW7XtF.jpg"};
+	}
+	
+	logger("formatResultForDiscord: content is ["+titleText+"]");
+	logger("formatResultForDiscord: embed.description is ["+finalEmbed.description+"]");
+	
+	var formattedResult = {
+		"content" : titleText,
+		"embed" : finalEmbed
+	};
+
+
+	return formattedResult;
+}
 
 //message reception code
 function rollMessage(message)
 {
-  //message.channel.send('message receieved');   
-  var data = message.content;
-	 var name = message.author.username;
-  var helpMatch = data.match(/help/i);
-  if(helpMatch != null)
-  {
-	message.author.send(getHelpText1());
-	message.author.send(getHelpText2());
-	message.author.send(getHelpText3());
-	return;
-  }
+	//message.channel.send('message receieved');   
+	var data = message.content;
+	var name = message.author.username;
+	var helpMatch = data.match(/help/i);
+	if(helpMatch != null)
+	{
+		message.author.send(getHelpText1());
+		message.author.send(getHelpText2());
+		message.author.send(getHelpText3());
+		return;
+	}
 
 	//TODO: rolling for maddness in D&D 5e
 	/*
       var madnessMatch = data.text.match(/madness/i);
       if(madnessMatch != null)
       {
-        robot.logger.debug("Recieved madness request.");
         var msgData = getInteractiveMadnessMsg(channel_name);
-        robot.logger.debug("msgData is:\n" + JSON.stringify(msgData));
+        
         return res.json(msgData);
       }
       */
@@ -341,13 +435,14 @@ function rollMessage(message)
 	var diceMatch = data.match(/(\d+)(d)(\d+)/ig);
 	if(diceMatch != null)
 	{
-		logger("rolling dice...");
+
 		var msgDataArray = processDiceCommandString(name,data);
-		//logger("msgData is:\n" + msgData);
-		//TODO: the data needs to arrive in a foemat neutral package. we should send it to a different function for formatting
+
 		for(var i = 0; i < msgDataArray.length; i++)
-		{     	
-			message.channel.send(msgDataArray[i].results);
+		{    
+			//logger(msgDataArray[i]);
+			var formattedDiscordMessage = formatResultForDiscord(msgDataArray[i]);
+			message.channel.send(formattedDiscordMessage.content, {embed: formattedDiscordMessage.embed });	
 		}
 		return;
 	}
@@ -366,7 +461,7 @@ function rollMessage(message)
 		var msgData = processMacroCommand(data.text,realName,username,channel_name);
 		return res.json(msgData);
 		*/
-		message.channel.send("3No valid dice roll or macro command. Use _/roll help_ to see command options.");
+		message.channel.send("No valid dice roll or macro command. Use _/roll help_ to see command options.");
 		return;
 	}
 }

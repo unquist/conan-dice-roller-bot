@@ -19,7 +19,7 @@ client.on('message', message => {
 
 function logger(message)
 {
-  console.log(message);
+	console.log(message);
 }
 
 function getHelpText1()
@@ -44,7 +44,7 @@ function getHelpText2()
 	helpText += "\nYou may add (in any order) a parameter of the form `#x` (or `x#`), which will run # multiples of whatever the command is:";
 	helpText += "\n`/roll 10x 1d20+1 to hit 1d6 damage`    (Rolls a 1d20+1 and a 1d6 couplet, 10 times in a row)";
 	helpText += "\n`/roll x2 1d20-1 to hit 1d12+1 damage`    (Rolls a 1d20-1 and a 1d12+1 couplet, twice in a row)";
-      	helpText += "\n\n";
+    helpText += "\n\n";
 	return helpText;
 }
 
@@ -344,11 +344,10 @@ function rollMessage(message)
 		logger("rolling dice...");
 		var msgDataArray = processDiceCommandString(name,data);
 		//logger("msgData is:\n" + msgData);
-		//TODO: the data needs to arrive in a foemat neutral package. we should send it tona different function for formatting
+		//TODO: the data needs to arrive in a foemat neutral package. we should send it to a different function for formatting
 		for(var i = 0; i < msgDataArray.length; i++)
-		{     	message.channel.send(msgDataArray[i].results);
-		
-		
+		{     	
+			message.channel.send(msgDataArray[i].results);
 		}
 		return;
 	}

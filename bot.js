@@ -3,19 +3,54 @@ const client = new Discord.Client();
 
 const DEBUG_MODE = false;
 
+const customEmojiMap = {
+	'20d20' : '618243626887282708',
+	'19d20' : '618245455481929749',
+	'18d20' : '618245470581555200',
+	'17d20' : '618245481843392542',
+	'16d20' : '618245495785127946',
+	'15d20' : '618245512977711137',
+	'14d20' : '618245526671851530',
+	'13d20' : '618245542048432128',
+	'12d20' : '618245559420977168',
+	'11d20' : '618245559337353276',
+	'10d20' : '618245559286759444',
+	'9d20' : '618245559085563906',
+	'8d20' : '618245559282827275',
+	'7d20' : '618245559270113281',
+	'6d20' : '618245559270244423',
+	'5d20' : '618245559261593620',
+	'4d20' : '618245559320313856',
+	'3d20' : '618245559299604480',
+	'2d20' : '618245559249272832',
+	'1d20' : '618245559240884244'
+ };
+
+
+
+
+
+
+
+
+
+
+
+
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
 client.on('message', message => {
   
-  if (message.content.startsWith('/roll')) {
-    //message.reply('Critical fail');
-    //message.channel.send('FAIL');
-	logger("someone sent a /roll message");
-  	rollMessage(message);
-	logger("finished processing a /roll message");
-  }
+	if (message.content.startsWith('/roll')) 
+	{
+		//message.reply('Critical fail');
+		//message.channel.send('FAIL');
+		logger("someone sent a /roll message");
+		rollMessage(message);
+		logger("finished processing a /roll message");
+	}
   
 });
 
@@ -311,6 +346,7 @@ function formatResultForDiscord(result)
 		var spacerCharacter = " . . . ";
 		
 		var m = "_" + num + "d" + sides;
+		
 
 		if(bonusString != "N/A")
 		{
@@ -325,8 +361,20 @@ function formatResultForDiscord(result)
 		if(singleRollResult.rolls.length > 1) 
 		{
 			m += "**Results**";
-			for(var i = 0; i < singleRollResult.rolls.length; i++) {
-				m += " ` "+singleRollResult.rolls[i]+" ` "
+			for(var i = 0; i < singleRollResult.rolls.length; i++) 
+			{
+				if(sides == 20)
+				{
+					var emojiMapKey = singleRollResult.rolls[i] + 'd' + sides;
+					var emojiIdString = customEmojiMap[emojiMapKey];
+					var emoji = client.emojis.get(emojiIdString);
+					m += ' ' + emoji.toString() + ' ';
+					
+				}
+				else
+				{
+					m += " ` "+singleRollResult.rolls[i]+" ` ";
+				}
 			}
 			if(bonusString != "N/A")
 			{
@@ -339,7 +387,18 @@ function formatResultForDiscord(result)
 		} 
 		else 
 		{
-			m += "**Result** _" + singleRollResult.rollsTotal + "_";
+			if(sides == 20)
+			{
+				var emojiMapKey = singleRollResult.rollsTotal + 'd' + sides;
+				var emojiIdString = customEmojiMap[emojiMapKey];
+				var emoji = client.emojis.get(emojiIdString);
+				m += ' ' + emoji.toString() + ' ';
+			}
+			else
+			{
+				m += "**Result** ` " + singleRollResult.rollsTotal + " ` ";
+			}
+			
 			if(bonusString != "N/A")
 			{
 				m += " "+spacerCharacter+" **Modifier**: _" + bonusString+"_ "+spacerCharacter;
@@ -442,6 +501,11 @@ function rollMessage(message)
 		{    
 			//logger(msgDataArray[i]);
 			var formattedDiscordMessage = formatResultForDiscord(msgDataArray[i]);
+			if(formattedDiscordMessage.embed.description.length > 2048)
+			{
+				message.channel.send("Error: Conan cannot roll that many dice at once (" + msgDataArray[i]['num'] + "d" + msgDataArray[i]['sides'] + ").");
+				return;
+			}
 			message.channel.send(formattedDiscordMessage.content, {embed: formattedDiscordMessage.embed });	
 		}
 		return;
